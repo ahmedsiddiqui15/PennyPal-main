@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(flutter:*)",
+      "powershell",
+      "Shell(dart:*)",
+      "Shell(Select-Object:*)",
+      "Shell(echo === firebase files in lib === && dir /s /b lib\\firebase_options.dart 2>nul && echo === android === && dir /b android\\app\\google-services.json 2>nul && echo === android root === && dir /b google-services.json 2>nul && echo === ios === && dir /b ios\\Runner\\GoogleService-Info.plist 2>nul && echo === firebase.json === && dir /b firebase.json 2>nul && echo === .firebaserc === && dir /b .firebaserc 2>nul)"
+    ],
+    "deny": [],
+    "defaultMode": "default"
+  }
+}
