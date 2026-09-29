@@ -31,6 +31,25 @@ flutter test      # 45 unit + widget tests
 
 ---
 
+## Email and password
+
+Login and registration use **Firebase Authentication**. The app does not store these passwords in code. Create both accounts once in the app (or in the Firebase Console), then use them to review the project.
+
+| Role | Email | Password | Where it opens |
+| --- | --- | --- | --- |
+| Student (user) | `student@pennypal.app` | `Student@123` | Student home |
+| Admin | `admin@pennypal.app` | `Admin@123` | Admin panel |
+
+Password rules for a new account: at least 8 characters, one letter, one number, and no spaces.
+
+**Student:** open the app → **Create Account** → enter the student email and password above → open the verification email → **Login**.
+
+**Admin:** create the admin account the same way. In the [Firebase Console](https://console.firebase.google.com/) for project `pennypal-c7942`, open **Firestore Database → users →** that account’s document and set `role` to `admin`. Sign out, then sign in again with the admin email and password.
+
+Mark both users **email verified** in Firebase Authentication if the inbox cannot receive the verification link. Until `emailVerified` is true, email/password users stay on the verify-email screen.
+
+---
+
 ## Backend — Firebase + Cloudinary
 
 PennyPal has **no separate local database and no seeded runtime data**. Every user, transaction, income
