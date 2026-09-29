@@ -106,7 +106,7 @@ This file maps **every requirement in the PennyPal SRS** to its actual implement
 
 *Item 22: a dedicated **About screen** (`/app/about`, linked from Profile and from Profile → Settings) now explains PennyPal's purpose, features and the "guidance only / not a bank" disclaimer.*
 *Item 23: name and email are auto-filled from the signed-in profile rather than typed into the form.*
-*Item 26: the chatbot ships with a deterministic, offline rule-based coach and an optional **Google Gemini** LLM brain (add a key in Settings → AI Assistant); it automatically falls back to the offline coach when Gemini is unavailable, so it never fails.*
+*Item 26: the chatbot ships with a deterministic, offline rule-based coach and an optional **Google Gemini** LLM brain configured only via root `.env` (`GEMINI_API_KEY` / `GEMINI_MODEL`); it automatically falls back to the offline coach when Gemini is unavailable, so it never fails. Users never enter the API key in the app.*
 
 ### 1.6.7 Savings Goals
 

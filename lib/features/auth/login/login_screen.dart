@@ -116,7 +116,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       label: 'Email Address',
                       hint: 'you@example.com',
                       controller: _email,
-                      icon: Icons.alternate_email_rounded,
+                      icon: Icons.email_outlined,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       autofillHints: const [AutofillHints.email],

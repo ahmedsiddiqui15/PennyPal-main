@@ -4,22 +4,22 @@ class GeminiConfig {
   GeminiConfig._();
 
   static const String _placeholderKey = 'YOUR_API_KEY_HERE';
-  static const String _placeholderModel = 'YOUR_MODEL_NAME';
+  static const String _placeholderModel = 'YOUR_MODEL_HERE';
   static const String _fallbackModel = 'gemini-flash-latest';
 
-  
   static String get envApiKey {
-    final String raw = _read('AI_API_KEY');
+    final String raw = _read('GEMINI_API_KEY');
     if (raw.isEmpty || raw == _placeholderKey) return '';
     return raw;
   }
 
-  
   static String get defaultModel {
-    final String raw = _read('AI_MODEL');
+    final String raw = _read('GEMINI_MODEL');
     if (raw.isEmpty || raw == _placeholderModel) return _fallbackModel;
     return raw;
   }
+
+  static bool get isConfigured => envApiKey.isNotEmpty;
 
   static const String baseUrl =
       'https://generativelanguage.googleapis.com/v1beta';

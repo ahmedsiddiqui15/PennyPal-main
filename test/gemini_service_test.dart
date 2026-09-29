@@ -224,7 +224,8 @@ void main() {
         geminiApiKey: 'bad',
       );
 
-      expect(reply, contains('rejected the API key'));
+      expect(reply, contains('Offline coach'));
+      expect(reply, contains('not available'));
     });
   });
 

@@ -41,7 +41,7 @@ in Cloud Firestore; images (profile photos) live in **Cloudinary** (see [below](
 (`FirestoreService.enableOfflinePersistence`), so entries made without a connection are stored locally and
 **queued**, then synced automatically by the SDK when the connection returns. A banner (`connectivity_plus`)
 shows the offline state. Beyond that cache, the only thing kept on-device is UI preference (theme mode,
-currency, onboarding flag, AI chat history, optional Gemini API key) via `shared_preferences` — never
+currency, onboarding flag, AI chat history) via `shared_preferences` — never
 financial data.
 
 If Firebase cannot initialise, the app shows a clear configuration error screen instead of silently
@@ -100,7 +100,9 @@ can also be changed any time from Profile → Edit Profile (or by tapping the av
   prediction card and **PDF export** (plus CSV generation) via the `pdf`/`printing` packages.
 * **Penny AI assistant** — chat with animated bubbles and a typing indicator. Runs on a deterministic,
   offline coach by default (answers computed from the user's real snapshot — overspending, savings plans,
-  budgets, forecasts) and can be upgraded to **Google Gemini**: add an API key in Settings → AI Assistant
+  budgets, forecasts) and can be upgraded to **Google Gemini** via a root `.env` file
+  (`GEMINI_API_KEY` / `GEMINI_MODEL`); it automatically falls back to the offline coach when Gemini
+  is unavailable, so it never fails. Users never manage the API key inside the app.
   and Penny answers with an LLM grounded in the same numbers. Any failure silently falls back to the
   offline coach, so the chat never breaks.
 * **Smart insights** — category spikes, savings-rate feedback, budget status, daily-average deviations and
@@ -288,21 +290,21 @@ service cloud.firestore {
 ## Gemini (optional)
 
 Penny AI runs on a deterministic, offline coach by default. To upgrade it to **Google Gemini**,
-supply an API key in one of two ways:
+put credentials in the project-root `.env` file (next to `pubspec.yaml`):
 
-* **In the app (recommended):** Profile → Settings → **AI Assistant**, then paste a key from
-  [Google AI Studio](https://aistudio.google.com/apikey). It is stored on-device with
-  `shared_preferences`, so no rebuild is needed; clearing it returns to the offline coach.
-* **At build time:** `flutter run --dart-define=GEMINI_API_KEY=<key>`. Override the model with
-  `--dart-define=GEMINI_MODEL=gemini-3.8-flash` (the default is the `gemini-flash-latest` alias,
-  which tracks the current model).
+```env
+GEMINI_API_KEY=YOUR_API_KEY_HERE
+GEMINI_MODEL=YOUR_MODEL_HERE
+```
+
+Get a key from [Google AI Studio](https://aistudio.google.com/apikey). The app loads `.env` at
+startup via `flutter_dotenv`. Users never enter or manage the key in the UI.
 
 Penny sends each question with the user's live snapshot (income, expenses, budget, top categories,
 forecast) as context. If the key is missing, rejected, rate-limited, or the device is offline, it
 silently falls back to the offline coach — the chat never fails. Requests go straight to the Gemini
-REST API (`generateContent`) over `http`. **Never commit a key**, because a `--dart-define` value is
-embedded in the build. When Gemini is enabled, the user's question and a summary of their numbers
-are sent to Google.
+REST API (`generateContent`) over `http`. **Never commit a real key** (`.env` is gitignored). When
+Gemini is enabled, the user's question and a summary of their numbers are sent to Google.
 
 ## Cloudinary (image uploads)
 

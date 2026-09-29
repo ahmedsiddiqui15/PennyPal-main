@@ -197,27 +197,25 @@ class GeminiService {
       return 'Gemini is rate-limited right now. Try again in a moment.';
     }
     if (response.statusCode == 503) {
-      return 'Gemini is busy right now. Try again shortly, or set a different '
-          'model in Settings.';
+      return 'Gemini is busy right now. Please try again shortly.';
     }
     if (detail != null && detail.isNotEmpty) {
-      
       final String lower = detail.toLowerCase();
       if (lower.contains('api key') ||
           lower.contains('apikey') ||
           lower.contains('permission') ||
           lower.contains('credential')) {
-        return 'Gemini rejected the API key. Check it in Settings.';
+        return 'Gemini is not available right now. Please try again later.';
       }
       if (lower.contains('model')) {
-        return 'Gemini could not use that model. Try another model in Settings.';
+        return 'Gemini could not use the configured model. Please try again later.';
       }
       return 'Gemini could not answer right now. Please try again.';
     }
     if (response.statusCode == 400 ||
         response.statusCode == 401 ||
         response.statusCode == 403) {
-      return 'Gemini rejected the API key. Check it in Settings.';
+      return 'Gemini is not available right now. Please try again later.';
     }
     return 'Gemini request failed (${response.statusCode}).';
   }

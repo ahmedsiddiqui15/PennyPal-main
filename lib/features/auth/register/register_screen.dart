@@ -187,7 +187,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     const SizedBox(height: AppConstants.spaceXl),
                     AppTextField(
                       label: 'Full Name',
-                      hint: 'Ahmed Raza',
+                      hint: 'Enter your name',
                       controller: _name,
                       icon: Icons.person_outline_rounded,
                       textCapitalization: TextCapitalization.words,
@@ -200,7 +200,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       label: 'Email Address',
                       hint: 'you@example.com',
                       controller: _email,
-                      icon: Icons.alternate_email_rounded,
+                      icon: Icons.email_outlined,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       validator: Validators.email,

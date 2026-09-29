@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../models/user_model.dart';
+import '../../../../providers/settings_providers.dart';
 
-class DashboardHeader extends StatelessWidget {
+class DashboardHeader extends ConsumerWidget {
   const DashboardHeader({
     super.key,
     required this.user,
@@ -20,9 +22,29 @@ class DashboardHeader extends StatelessWidget {
   final VoidCallback? onBellTap;
   final int unreadCount;
 
+  Future<void> _toggleTheme(WidgetRef ref, BuildContext context) async {
+    final ThemeMode current = ref.read(settingsProvider).themeMode;
+    final bool isDark = switch (current) {
+      ThemeMode.dark => true,
+      ThemeMode.light => false,
+      ThemeMode.system =>
+        MediaQuery.platformBrightnessOf(context) == Brightness.dark,
+    };
+    await ref.read(settingsProvider.notifier).setThemeMode(
+          isDark ? ThemeMode.light : ThemeMode.dark,
+        );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppPalette palette = context.palette;
+    final ThemeMode themeMode = ref.watch(settingsProvider).themeMode;
+    final bool isDark = switch (themeMode) {
+      ThemeMode.dark => true,
+      ThemeMode.light => false,
+      ThemeMode.system =>
+        MediaQuery.platformBrightnessOf(context) == Brightness.dark,
+    };
 
     return Row(
       children: [
@@ -30,17 +52,18 @@ class DashboardHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                user.firstName,
-                style: AppTextStyles.title.copyWith(color: palette.textPrimary),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
+          
               Text(
                 Formatters.greeting(),
                 style: AppTextStyles.subtitle
                     .copyWith(color: palette.textSecondary),
+              ),   
+              const SizedBox(height: 2),
+               Text(
+                user.name,
+                style: AppTextStyles.title.copyWith(color: palette.textPrimary),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 2),
               Text(
@@ -49,6 +72,14 @@ class DashboardHeader extends StatelessWidget {
                     .copyWith(color: palette.textSecondary),
               ),
             ],
+          ),
+        ),
+        IconButton(
+          onPressed: () => _toggleTheme(ref, context),
+          tooltip: isDark ? 'Switch to light mode' : 'Switch to dark mode',
+          icon: Icon(
+            isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+            color: palette.textPrimary,
           ),
         ),
         Stack(

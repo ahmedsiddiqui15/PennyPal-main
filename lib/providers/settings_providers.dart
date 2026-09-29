@@ -15,8 +15,6 @@ class SettingsState {
     required this.notificationsEnabled,
     required this.reminderHour,
     required this.onboardingSeen,
-    this.aiApiKey,
-    this.aiModel,
   });
 
   final ThemeMode themeMode;
@@ -26,12 +24,6 @@ class SettingsState {
   final int reminderHour;
   final bool onboardingSeen;
 
-  
-  final String? aiApiKey;
-
-  
-  final String? aiModel;
-
   SettingsState copyWith({
     ThemeMode? themeMode,
     String? currencyCode,
@@ -39,10 +31,6 @@ class SettingsState {
     bool? notificationsEnabled,
     int? reminderHour,
     bool? onboardingSeen,
-    String? aiApiKey,
-    bool clearAiApiKey = false,
-    String? aiModel,
-    bool clearAiModel = false,
   }) =>
       SettingsState(
         themeMode: themeMode ?? this.themeMode,
@@ -51,8 +39,6 @@ class SettingsState {
         notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
         reminderHour: reminderHour ?? this.reminderHour,
         onboardingSeen: onboardingSeen ?? this.onboardingSeen,
-        aiApiKey: clearAiApiKey ? null : (aiApiKey ?? this.aiApiKey),
-        aiModel: clearAiModel ? null : (aiModel ?? this.aiModel),
       );
 }
 
@@ -68,8 +54,6 @@ class SettingsController extends StateNotifier<SettingsState> {
         notificationsEnabled: prefs.notificationsEnabled,
         reminderHour: prefs.reminderHour,
         onboardingSeen: prefs.onboardingSeen,
-        aiApiKey: prefs.aiApiKey,
-        aiModel: prefs.aiModel,
       );
 
   static ThemeMode _parseTheme(String value) => switch (value) {
@@ -98,9 +82,6 @@ class SettingsController extends StateNotifier<SettingsState> {
     await _prefs.setCurrencyCode(code);
   }
 
-  
-  
-  
   Future<void> syncCurrencyPreference(String code) => setCurrency(code);
 
   Future<void> setNotificationsEnabled(bool value) async {
@@ -116,26 +97,6 @@ class SettingsController extends StateNotifier<SettingsState> {
   Future<void> markOnboardingSeen() async {
     state = state.copyWith(onboardingSeen: true);
     await _prefs.setOnboardingSeen(true);
-  }
-
-  Future<void> setAiApiKey(String? key) async {
-    final String? normalized =
-        (key == null || key.trim().isEmpty) ? null : key.trim();
-    state = state.copyWith(
-      aiApiKey: normalized,
-      clearAiApiKey: normalized == null,
-    );
-    await _prefs.setAiApiKey(normalized);
-  }
-
-  Future<void> setAiModel(String? model) async {
-    final String? normalized =
-        (model == null || model.trim().isEmpty) ? null : model.trim();
-    state = state.copyWith(
-      aiModel: normalized,
-      clearAiModel: normalized == null,
-    );
-    await _prefs.setAiModel(normalized);
   }
 }
 
@@ -156,14 +117,10 @@ final themeModeProvider = Provider<ThemeMode>(
   (ref) => ref.watch(settingsProvider).themeMode,
 );
 
-final effectiveAiApiKeyProvider = Provider<String>((ref) {
-  final String? stored = ref.watch(settingsProvider).aiApiKey;
-  if (stored != null && stored.isNotEmpty) return stored;
-  return GeminiConfig.envApiKey;
-});
+final effectiveAiApiKeyProvider = Provider<String>(
+  (ref) => GeminiConfig.envApiKey,
+);
 
-final effectiveAiModelProvider = Provider<String>((ref) {
-  final String? stored = ref.watch(settingsProvider).aiModel;
-  if (stored != null && stored.isNotEmpty) return stored;
-  return GeminiConfig.defaultModel;
-});
+final effectiveAiModelProvider = Provider<String>(
+  (ref) => GeminiConfig.defaultModel,
+);

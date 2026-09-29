@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
-import '../../../core/routes/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../core/widgets/penny_ai_icon.dart';
@@ -77,10 +75,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            if (!geminiReady)
-              _OfflineCoachBanner(
-                onTap: () => context.push(AppRoutes.settings),
-              ),
+            if (!geminiReady) const _OfflineCoachBanner(),
             Expanded(
               child: ListView.builder(
                 controller: _scroll,
@@ -187,38 +182,31 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 }
 
 class _OfflineCoachBanner extends StatelessWidget {
-  const _OfflineCoachBanner({required this.onTap});
-
-  final VoidCallback onTap;
+  const _OfflineCoachBanner();
 
   @override
   Widget build(BuildContext context) {
     final AppPalette palette = context.palette;
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppConstants.spaceMd,
-          vertical: 10,
-        ),
-        color: palette.surfaceMuted,
-        child: Row(
-          children: [
-            Icon(Icons.info_outline_rounded,
-                size: 16, color: palette.textSecondary),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Offline coach — add a Gemini key in Settings for smarter answers.',
-                style:
-                    AppTextStyles.caption.copyWith(color: palette.textSecondary),
-              ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppConstants.spaceMd,
+        vertical: 10,
+      ),
+      color: palette.surfaceMuted,
+      child: Row(
+        children: [
+          Icon(Icons.info_outline_rounded,
+              size: 16, color: palette.textSecondary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Penny is using the offline coach right now.',
+              style:
+                  AppTextStyles.caption.copyWith(color: palette.textSecondary),
             ),
-            Icon(Icons.chevron_right_rounded,
-                size: 18, color: palette.textSecondary),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
