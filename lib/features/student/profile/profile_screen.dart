@@ -17,6 +17,7 @@ import '../../../core/widgets/stagger.dart';
 import '../../../models/user_model.dart';
 import '../../../providers/auth_providers.dart';
 import '../../../providers/finance_providers.dart';
+import '../../../providers/profile_image_providers.dart';
 import '../../../providers/settings_providers.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -47,6 +48,8 @@ class ProfileScreen extends ConsumerWidget {
           }
           final String symbol = ref.watch(currencySymbolProvider);
           final int unlockedBadges = data.unlockedBadgeCount;
+          final String? localImagePath =
+              ref.watch(localProfileImagePathProvider).valueOrNull;
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(
@@ -56,14 +59,15 @@ class ProfileScreen extends ConsumerWidget {
               AppConstants.spaceXxl,
             ),
             children: [
-              
               AppCard(
                 padding: const EdgeInsets.all(AppConstants.spaceLg),
                 child: Column(
                   children: [
                     AppAvatar(
                       name: user.name,
-                      imageUrl: user.photoUrl,
+                      imagePath: localImagePath,
+                      imageUrl:
+                          localImagePath == null ? user.photoUrl : null,
                       size: 88,
                       showEditBadge: true,
                       onTap: () => context.push(AppRoutes.editProfile),

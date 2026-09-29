@@ -6,6 +6,7 @@ import '../../../../core/theme/text_styles.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../models/user_model.dart';
+import '../../../../providers/profile_image_providers.dart';
 import '../../../../providers/settings_providers.dart';
 
 class DashboardHeader extends ConsumerWidget {
@@ -45,6 +46,8 @@ class DashboardHeader extends ConsumerWidget {
       ThemeMode.system =>
         MediaQuery.platformBrightnessOf(context) == Brightness.dark,
     };
+    final String? localImagePath =
+        ref.watch(localProfileImagePathProvider).valueOrNull;
 
     return Row(
       children: [
@@ -52,14 +55,13 @@ class DashboardHeader extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-          
               Text(
                 Formatters.greeting(),
                 style: AppTextStyles.subtitle
                     .copyWith(color: palette.textSecondary),
-              ),   
+              ),
               const SizedBox(height: 2),
-               Text(
+              Text(
                 user.name,
                 style: AppTextStyles.title.copyWith(color: palette.textPrimary),
                 maxLines: 1,
@@ -120,7 +122,8 @@ class DashboardHeader extends ConsumerWidget {
         const SizedBox(width: 4),
         AppAvatar(
           name: user.name,
-          imageUrl: user.photoUrl,
+          imagePath: localImagePath,
+          imageUrl: localImagePath == null ? user.photoUrl : null,
           size: 44,
           onTap: onAvatarTap,
         ),

@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,9 +20,12 @@ import '../../../core/widgets/state_views.dart';
 import '../../../models/user_model.dart';
 import '../../../providers/auth_providers.dart';
 import '../../../providers/currency_providers.dart';
+import '../../../providers/profile_image_providers.dart';
 import '../../../providers/service_providers.dart';
 import '../../../providers/settings_providers.dart';
-import '../../../services/cloudinary_service.dart';
+import '../../../services/profile_image_service.dart';
+
+enum _PhotoAction { gallery, camera, remove }
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -40,14 +41,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   late final TextEditingController _incomeGoal;
 
   bool _saving = false;
-  bool _uploadingPhoto = false;
+  bool _savingPhoto = false;
   bool _changingCurrency = false;
-  String? _photoUrl;
-
-  
-  
-  Uint8List? _photoBytes;
-  bool _initialised = false;
+  String? _localImagePath;
 
   @override
   void initState() {
@@ -58,7 +54,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _incomeGoal = TextEditingController(
       text: _formatGoal(user?.monthlyIncomeGoal ?? 0),
     );
-    _photoUrl = user?.photoUrl;
+    _loadLocalImage();
+  }
+
+  Future<void> _loadLocalImage() async {
+    final UserModel? user = ref.read(currentUserProvider);
+    if (user == null) return;
+    final String? path =
+        await ref.read(profileImageServiceProvider).getLocalImagePath(user.id);
+    if (!mounted) return;
+    setState(() => _localImagePath = path);
   }
 
   String _formatGoal(double value) {
@@ -101,52 +106,108 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     super.dispose();
   }
 
-  Future<void> _pickPhoto() async {
+  Future<void> _pickAndSave(ImageSource source) async {
+    final UserModel? user = ref.read(currentUserProvider);
+    if (user == null) return;
+
+    final ProfileImageService service = ref.read(profileImageServiceProvider);
+
     try {
-      final XFile? photo = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 80,
-        maxWidth: 800,
+      final XFile? picked = await service.pickImage(source: source);
+      if (picked == null || !mounted) return;
+
+      setState(() => _savingPhoto = true);
+
+      final String path = await service.savePickedImage(
+        userId: user.id,
+        picked: picked,
       );
-      if (photo == null) return;
 
-      final Uint8List bytes = await photo.readAsBytes();
       if (!mounted) return;
-      
       setState(() {
-        _photoBytes = bytes;
-        _uploadingPhoto = true;
+        _localImagePath = path;
+        _savingPhoto = false;
       });
+      ref.invalidate(localProfileImagePathProvider);
+      AppSnackbar.success(context, 'Profile photo saved on this device.');
+    } on ProfileImageException catch (e) {
+      if (!mounted) return;
+      setState(() => _savingPhoto = false);
+      AppSnackbar.error(context, e.message);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _savingPhoto = false);
+      AppSnackbar.error(context, 'Could not save photo. Please try again.');
+    }
+  }
 
-      final CloudinaryService cloudinary = ref.read(cloudinaryServiceProvider);
-      if (!cloudinary.isConfigured) {
-        
-        if (!mounted) return;
-        setState(() => _uploadingPhoto = false);
-        AppSnackbar.info(
-          context,
-          'Photo shown locally. Add your Cloudinary cloud name and upload '
-          'preset to enable uploads.',
+  Future<void> _removePhoto() async {
+    final UserModel? user = ref.read(currentUserProvider);
+    if (user == null || _localImagePath == null) return;
+
+    setState(() => _savingPhoto = true);
+    try {
+      await ref.read(profileImageServiceProvider).deleteProfileImage(user.id);
+      if (!mounted) return;
+      setState(() {
+        _localImagePath = null;
+        _savingPhoto = false;
+      });
+      ref.invalidate(localProfileImagePathProvider);
+      AppSnackbar.success(context, 'Profile photo removed.');
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _savingPhoto = false);
+      AppSnackbar.error(context, 'Could not remove photo.');
+    }
+  }
+
+  Future<void> _onAvatarTap() async {
+    final _PhotoAction? action = await showModalBottomSheet<_PhotoAction>(
+      context: context,
+      showDragHandle: true,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Choose from gallery'),
+                onTap: () => Navigator.pop(context, _PhotoAction.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: const Text('Take a photo'),
+                onTap: () => Navigator.pop(context, _PhotoAction.camera),
+              ),
+              if (_localImagePath != null)
+                ListTile(
+                  leading: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: AppColors.danger,
+                  ),
+                  title: const Text(
+                    'Remove photo',
+                    style: TextStyle(color: AppColors.danger),
+                  ),
+                  onTap: () => Navigator.pop(context, _PhotoAction.remove),
+                ),
+            ],
+          ),
         );
-        return;
-      }
+      },
+    );
 
-      final String url = await cloudinary.uploadImage(
-        bytes: bytes,
-        fileName: 'avatar.jpg',
-      );
-      if (!mounted) return;
-      setState(() {
-        _photoUrl = url;
-        _uploadingPhoto = false;
-      });
-      AppSnackbar.success(context, 'Photo updated.');
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _uploadingPhoto = false);
-      
-      
-      AppSnackbar.error(context, 'Photo upload failed: $e');
+    if (!mounted || action == null) return;
+
+    switch (action) {
+      case _PhotoAction.gallery:
+        await _pickAndSave(ImageSource.gallery);
+      case _PhotoAction.camera:
+        await _pickAndSave(ImageSource.camera);
+      case _PhotoAction.remove:
+        await _removePhoto();
     }
   }
 
@@ -160,7 +221,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final UserModel updated = user.copyWith(
       name: _name.text.trim(),
       phone: _phone.text.trim(),
-      photoUrl: _photoUrl,
       currencyCode: ref.read(settingsProvider).currencyCode,
       currencySymbol: ref.read(settingsProvider).currencySymbol,
       monthlyIncomeGoal: double.tryParse(_incomeGoal.text.trim()) ?? 0,
@@ -180,12 +240,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (user == null) {
       return const Scaffold(body: LoadingView());
     }
-    if (!_initialised) {
-      _initialised = true;
-    }
 
     final AppPalette palette = context.palette;
     final String symbol = ref.watch(currencySymbolProvider);
+    final AsyncValue<String?> localPath =
+        ref.watch(localProfileImagePathProvider);
+    final String? displayPath = _localImagePath ?? localPath.valueOrNull;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Edit Profile')),
@@ -203,13 +263,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       children: [
                         AppAvatar(
                           name: _name.text.isEmpty ? user.name : _name.text,
-                          imageUrl: _photoUrl,
-                          imageBytes: _photoBytes,
+                          imagePath: displayPath,
+                          imageUrl: displayPath == null ? user.photoUrl : null,
                           size: 104,
                           showEditBadge: true,
-                          onTap: _uploadingPhoto ? null : _pickPhoto,
+                          onTap: _savingPhoto ? null : _onAvatarTap,
                         ),
-                        if (_uploadingPhoto)
+                        if (_savingPhoto)
                           const Positioned(
                             bottom: 0,
                             child: AppLoadingBar(width: 72, height: 3),
@@ -218,7 +278,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     ),
                     const SizedBox(height: 10),
                     TextButton.icon(
-                      onPressed: _uploadingPhoto ? null : _pickPhoto,
+                      onPressed: _savingPhoto ? null : _onAvatarTap,
                       icon: const Icon(Icons.photo_camera_outlined, size: 18),
                       label: const Text('Change photo'),
                     ),
@@ -260,9 +320,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     const TextInputType.numberWithOptions(decimal: true),
               ),
               const SizedBox(height: AppConstants.spaceLg),
-              Text('Preferred currency',
-                  style: AppTextStyles.subtitle
-                      .copyWith(color: palette.textPrimary)),
+              Text(
+                'Preferred currency',
+                style: AppTextStyles.subtitle
+                    .copyWith(color: palette.textPrimary),
+              ),
               const SizedBox(height: AppConstants.spaceSm),
               AppCard(
                 padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -271,9 +333,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       .map(
                         (MapEntry<int, CurrencyOption> e) => CurrencyTile(
                           option: e.value,
-                          selected:
-                              ref.watch(settingsProvider).currencyCode ==
-                                  e.value.code,
+                          selected: ref.watch(settingsProvider).currencyCode ==
+                              e.value.code,
                           showDivider:
                               e.key != AppConfig.currencies.length - 1,
                           onTap: _changingCurrency

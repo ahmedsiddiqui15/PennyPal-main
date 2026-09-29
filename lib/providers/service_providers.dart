@@ -7,6 +7,7 @@ import '../services/connectivity_service.dart';
 import '../services/notification_service.dart';
 import '../services/ocr/receipt_ocr.dart';
 import '../services/preferences_service.dart';
+import '../services/profile_image_service.dart';
 import '../services/report_service.dart';
 import '../services/repository.dart';
 import '../services/voice_service.dart';
@@ -28,6 +29,10 @@ final cloudinaryServiceProvider = Provider<CloudinaryService>((ref) {
   ref.onDispose(service.dispose);
   return service;
 });
+
+final profileImageServiceProvider = Provider<ProfileImageService>(
+  (ref) => ProfileImageService(),
+);
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   final NotificationService service = NotificationService();

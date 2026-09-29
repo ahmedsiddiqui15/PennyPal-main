@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ class AppAvatar extends StatelessWidget {
     super.key,
     required this.name,
     this.imageUrl,
+    this.imagePath,
     this.imageBytes,
     this.size = 48,
     this.onTap,
@@ -17,44 +19,43 @@ class AppAvatar extends StatelessWidget {
   });
 
   final String name;
-
-  
   final String? imageUrl;
-
-  
-  
+  final String? imagePath;
   final Uint8List? imageBytes;
-
   final double size;
   final VoidCallback? onTap;
   final bool showEditBadge;
 
+  bool get _hasBytes => imageBytes != null && imageBytes!.isNotEmpty;
+
+  bool get _hasLocalPath {
+    final String? path = imagePath;
+    if (path == null || path.isEmpty) return false;
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return false;
+    }
+    return true;
+  }
+
+  bool get _hasNetworkUrl {
+    final String? url = imageUrl;
+    if (url == null || url.isEmpty) return false;
+    return url.startsWith('http://') || url.startsWith('https://');
+  }
+
   @override
   Widget build(BuildContext context) {
-    final bool hasBytes = imageBytes != null && imageBytes!.isNotEmpty;
-    final bool hasUrl = imageUrl != null && imageUrl!.isNotEmpty;
+    final bool hasImage = _hasBytes || _hasLocalPath || _hasNetworkUrl;
 
     final Widget avatar = Container(
       height: size,
       width: size,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        gradient: (hasBytes || hasUrl) ? null : AppColors.amberGradient,
+        gradient: hasImage ? null : AppColors.amberGradient,
         shape: BoxShape.circle,
       ),
-      child: hasBytes
-          ? Image.memory(
-              imageBytes!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _fallback(context),
-            )
-          : hasUrl
-              ? Image.network(
-                  imageUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _fallback(context),
-                )
-              : _fallback(context),
+      child: _buildImage(context),
     );
 
     final Widget withBadge = showEditBadge
@@ -85,6 +86,31 @@ class AppAvatar extends StatelessWidget {
 
     if (onTap == null) return withBadge;
     return GestureDetector(onTap: onTap, child: withBadge);
+  }
+
+  Widget _buildImage(BuildContext context) {
+    if (_hasBytes) {
+      return Image.memory(
+        imageBytes!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _fallback(context),
+      );
+    }
+    if (_hasLocalPath) {
+      return Image.file(
+        File(imagePath!),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _fallback(context),
+      );
+    }
+    if (_hasNetworkUrl) {
+      return Image.network(
+        imageUrl!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _fallback(context),
+      );
+    }
+    return _fallback(context);
   }
 
   Widget _fallback(BuildContext context) => Center(
